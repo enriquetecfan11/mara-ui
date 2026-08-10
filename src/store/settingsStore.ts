@@ -3,7 +3,9 @@ import { persist } from 'zustand/middleware'
 import type { DeviceSettings } from '@/types/mara'
 
 interface SettingsStore extends DeviceSettings {
-  set: (patch: Partial<DeviceSettings>) => void
+  /** Preferencia local (no se envía a Mara OS): micrófono del navegador. */
+  browserMic: boolean
+  set: (patch: Partial<DeviceSettings> & { browserMic?: boolean }) => void
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -14,6 +16,7 @@ export const useSettingsStore = create<SettingsStore>()(
       microphone: true,
       camera: true,
       wakeWord: true,
+      browserMic: false,
       set: (patch) => set(patch),
     }),
     { name: 'mara-ui-settings' },

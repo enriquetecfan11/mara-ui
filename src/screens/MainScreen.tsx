@@ -11,17 +11,17 @@ import { Icon } from '@/components/ui/Icon'
 import { useMaraStore } from '@/store/maraStore'
 import { useViewportSize } from '@/hooks/useViewportSize'
 import { useHold } from '@/hooks/useHold'
-import { useKeyboardNumpad } from '@/hooks/useKeyboardNumpad'
+import { useBrowserMic } from '@/hooks/useBrowserMic'
 import { sendCommand } from '@/services/maraConnection'
 
 export function MainScreen() {
-  useKeyboardNumpad()
+  const state = useMaraStore((s) => s.state)
+  const message = useMaraStore((s) => s.message)
+  const { active: micActive } = useBrowserMic(state === 'listening')
 
   const { width, height } = useViewportSize()
   const orbSize = Math.round(Math.min(width * 0.5, height * 0.46, 300))
 
-  const state = useMaraStore((s) => s.state)
-  const message = useMaraStore((s) => s.message)
   const [menuOpen, setMenuOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -54,7 +54,7 @@ export function MainScreen() {
     <div className="relative h-full w-full overflow-hidden bg-abyss">
       <div className="app-vignette pointer-events-none absolute inset-0" />
 
-      <SystemBar />
+      <SystemBar micActive={micActive} />
 
       <main className="relative flex h-full flex-col items-center justify-center px-6">
         <div className="flex flex-col items-center gap-5 sm:gap-6">
@@ -92,7 +92,7 @@ export function MainScreen() {
       )}
 
       <Menu open={menuOpen} onClose={() => setMenuOpen(false)} onOpenSettings={() => setSettingsOpen(true)} />
-      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} micActive={micActive} />
       <Overlays />
       <ConfirmOverlay />
     </div>

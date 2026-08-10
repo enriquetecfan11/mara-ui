@@ -10,11 +10,15 @@ export type MaraState =
   | 'error'
   | 'offline'
 
-/** Estado técnico del dispositivo (micrófono, cámara, temperatura). */
+/**
+ * Estado técnico del dispositivo (micrófono, cámara, temperatura).
+ * `null` significa valor desconocido: no se muestra hasta que Mara OS
+ * reporte datos reales (nunca se inventan).
+ */
 export interface DeviceStatus {
-  temperature: number
-  microphone: boolean
-  camera: boolean
+  temperature: number | null
+  microphone: boolean | null
+  camera: boolean | null
 }
 
 /** Ajustes que la UI puede enviar a Mara OS. */
@@ -83,6 +87,8 @@ export type MaraCommand =
   | { type: 'mara:settings'; data: Partial<DeviceSettings> }
   | { type: 'mara:confirm-response'; data: { id: string; accepted: boolean } }
   | { type: 'mara:numpad'; data: { key: NumpadKey; press?: NumpadPress } }
+  | { type: 'mara:audio-start'; data: { sampleRate: number; channels: number } }
+  | { type: 'mara:audio-stop' }
 
 /** Tipos de overlay temporal mostrados por la UI. */
 export type OverlayKind = 'volume' | 'mute' | 'camera' | 'network' | 'numpad' | 'error'

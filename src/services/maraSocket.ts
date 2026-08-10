@@ -46,6 +46,13 @@ export class MaraWebSocket implements MaraConnection {
     }
   }
 
+  /** Envía una trama binaria (audio PCM) hacia el bridge. */
+  sendBinary(data: ArrayBuffer): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(data)
+    }
+  }
+
   onEvent(listener: Listener<MaraEventEnvelope>): () => void {
     this.eventListeners.add(listener)
     return () => this.eventListeners.delete(listener)

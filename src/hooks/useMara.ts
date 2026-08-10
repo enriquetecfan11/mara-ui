@@ -3,7 +3,7 @@ import { getConnection } from '@/services/maraConnection'
 import { useMaraStore } from '@/store/maraStore'
 
 /**
- * Conecta la capa de comunicación (WebSocket o mock) con el store.
+ * Conecta la capa de comunicación (WebSocket) con el store.
  * Se monta una única vez a nivel de aplicación.
  */
 export function useMara(): void {

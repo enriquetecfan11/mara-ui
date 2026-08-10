@@ -23,11 +23,12 @@ React · TypeScript · Vite · Tailwind CSS · Framer Motion · Zustand · WebSo
 - **Interacción táctil**: tap para escuchar/interrumpir, pulsación larga para
   abrir un mini menú.
 - **Panel de ajustes**: volumen, brillo, micrófono, cámara, wake word, estado de
-  Mara OS, simulación de estados, numpad y eventos, y reinicio de la interfaz.
+  Mara OS y reinicio de la interfaz.
 - **Protocolo de eventos v1** (`type`, `version`, `timestamp`, `data`) con
-  soporte mock del teclado numérico preparado para `mara-device`.
-- **Modo mock** para probar todos los estados sin backend, y **WebSocket** para
-  conectar con Mara OS.
+  soporte del teclado numérico preparado para `mara-device`.
+- **Entrada de voz desde el navegador** para probar hablando desde el PC
+  (captura `getUserMedia`, la manda al bridge y el orb reacciona al nivel).
+- **WebSocket** para conectar con Mara OS o el bridge.
 - Lista para ejecutarse en **modo kiosk** en Chromium.
 
 ## Requisitos
@@ -42,19 +43,15 @@ npm install
 npm run dev
 ```
 
-Abre `http://localhost:5173`. Por defecto arranca en **modo mock**, que simula
-el ciclo completo de estados sin necesidad de backend.
+Abre `http://localhost:5173`.
 
 ### Configuración por variables de entorno
 
 Crea un `.env` a partir de `.env.example`:
 
 ```env
-# "mock" (sin backend) o "ws" (WebSocket real con Mara OS)
-VITE_MARA_MODE=mock
-
-# URL del WebSocket de Mara OS
-VITE_MARA_WS_URL=ws://192.168.1.50:8765
+# UI → bridge (localhost:8765 por defecto si no se define)
+VITE_MARA_WS_URL=ws://localhost:8765
 ```
 
 ## Producción
@@ -81,12 +78,19 @@ El proyecto incluye un pequeño servidor Node en `server/` que hace tres cosas:
 - expone un **WebSocket** al que se conecta la UI, y
 - expone una **API HTTP** para que le envíes eventos.
 
-Configura la UI para conectarse al bridge (modo `ws`) y compila:
+Configura la UI para conectarse al bridge y compila:
 
 ```env
 # .env
-VITE_MARA_MODE=ws
 VITE_MARA_WS_URL=ws://localhost:8765
+```
+
+El bridge también lee `MARA_BRAIN_WS_URL` desde el `.env` (cargado por `dotenv`):
+
+```env
+# .env
+VITE_MARA_WS_URL=ws://localhost:8765
+MARA_BRAIN_WS_URL=ws://192.168.1.50:9000
 ```
 
 ```bash
@@ -219,7 +223,7 @@ xset s noblank
 
 ## Contrato de comunicación con Mara OS
 
-La capa `src/services/maraConnection.ts` decide entre WebSocket real y mock.
+La capa `src/services/maraConnection.ts` gestiona la conexión WebSocket.
 La UI no contiene lógica de IA: solo recibe eventos y envía comandos.
 
 ### Protocolo v1
@@ -283,11 +287,32 @@ El estado de Mara (`state`) es independiente del estado técnico del dispositivo
 { type: 'mara:settings', data: { volume?: number, brightness?: number, microphone?: boolean, camera?: boolean, wakeWord?: boolean } }
 { type: 'mara:confirm-response', data: { id: string, accepted: boolean } }
 { type: 'mara:numpad', data: { key: NumpadKey, press?: 'short' | 'long' } }
+{ type: 'mara:audio-start', data: { sampleRate: number, channels: number } }
+{ type: 'mara:audio-stop' }
 ```
 
 `mara:settings` envía únicamente los campos que cambian. La UI **no ejecuta**
 acciones críticas: ante un `mara:confirm` devuelve la decisión con
 `mara:confirm-response` y es Mara OS quien las aplica.
+
+`mara:audio-start` / `mara:audio-stop` + tramas PCM binarias (Int16, 16 kHz
+mono) son la entrada de voz desde el navegador. Ver [entrada de voz](#entrada-de-voz-desde-el-navegador).
+
+## Entrada de voz desde el navegador
+
+El micro del dispositivo lo captura Mara OS, pero para **probar voz desde el
+PC** la UI puede capturar el audio del navegador y enviarlo por el bridge:
+
+1. Abre **Ajustes → Micrófono del navegador**.
+2. El navegador pide permiso de micro (requiere `localhost` o HTTPS).
+3. Mientras captura: la barra superior muestra **Mic PC**, el orb reacciona al
+   nivel que el bridge calcula y devuelve como `mara:audio-level`.
+4. El audio viaja como `mara:audio-start`, tramas PCM binarias y
+   `mara:audio-stop`. El bridge calcula el nivel y lo emite como
+   `mara:audio-level` para todas las UIs; si `MARA_BRAIN_WS_URL` está
+   configurado, reenvía el audio crudo al cerebro de Mara.
+
+Es una herramienta de desarrollo: en producción la voz la captura Mara OS.
 
 ## Overlays temporales
 
@@ -299,14 +324,11 @@ La UI muestra avisos transitorios sin llenar la pantalla:
 - **Confirmación crítica**: modal con `Enter` = aceptar y `.` = cancelar
   (también por toque), compatible con pantalla táctil y teclado.
 
-## Teclado numérico en modo mock
+## Teclado numérico
 
-En modo mock el teclado físico actúa como `mara-device`:
-
-- Dígitos, `*` y `#` simulan pulsaciones (`mara:numpad`).
-- `P` simula una solicitud de confirmación (acción crítica).
-- También se puede simular desde el panel de ajustes o con el bridge:
-  `npm run send -- numpad=5` o `npm run send -- numpad=power_long`.
+El teclado físico (`mara-device`) envía eventos `mara:numpad` vía WebSocket.
+También se puede simular desde el bridge:
+`npm run send -- numpad=5` o `npm run send -- numpad=power_long`.
 
 ## Gestos táctiles
 
@@ -341,17 +363,17 @@ src/
 │   ├── useClock.ts
 │   ├── useHold.ts
 │   ├── useKeyboardNumpad.ts
+│   ├── useBrowserMic.ts
 │   └── useViewportSize.ts
 ├── services/
-│   ├── maraConnection.ts   # contrato + factory (mock | ws)
-│   └── maraSocket.ts       # WebSocket con reconexión (solo transporte)
+│   ├── maraConnection.ts   # contrato + WebSocket
+│   ├── maraSocket.ts       # WebSocket con reconexión (solo transporte)
+│   └── maraMic.ts          # micrófono del navegador (PCM Int16 16 kHz)
 ├── store/
 │   ├── maraStore.ts        # estado visual + técnico + overlays
 │   └── settingsStore.ts    # persistido en localStorage
 ├── types/
 │   └── mara.ts             # protocolo v1 + tipos + normalización
-└── mocks/
-    └── mockMara.ts         # simulador de estados, numpad y confirmación
 ```
 
 ## Scripts
@@ -362,3 +384,6 @@ src/
 | `npm run build`      | Typecheck + build de producción      |
 | `npm run preview`    | Sirve el build localmente            |
 | `npm run typecheck`  | Comprueba tipos de TypeScript        |
+| `npm run server`     | Inicia el bridge (sirve dist + WS + API) |
+| `npm run send`       | Envía un evento al bridge vía HTTP   |
+| `npm test`           | Ejecuta tests unitarios               |

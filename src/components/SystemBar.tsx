@@ -3,11 +3,11 @@ import { useMaraStore } from '@/store/maraStore'
 import { Icon } from '@/components/ui/Icon'
 
 /** Barra superior discreta: hora, marca y telemetría técnica mínima. */
-export function SystemBar() {
+export function SystemBar({ micActive }: { micActive: boolean }) {
   const time = useClock()
   const device = useMaraStore((s) => s.device)
   const connected = useMaraStore((s) => s.connected)
-  const temp = Math.round(device.temperature)
+  const temp = device.temperature != null ? Math.round(device.temperature) : null
 
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-5 sm:px-7 sm:pt-6">
@@ -34,7 +34,7 @@ export function SystemBar() {
 
         <span className="flex items-center gap-1.5 text-xs tabular-nums">
           <Icon name="temp" size={15} />
-          {temp > 0 ? `${temp}°` : '--°'}
+          {temp != null && temp > 0 ? `${temp}°` : '--°'}
         </span>
 
         <span className={device.microphone ? 'text-ink/80' : 'text-faint'}>
@@ -44,6 +44,13 @@ export function SystemBar() {
         <span className={device.camera ? 'text-ink/80' : 'text-faint'}>
           <Icon name={device.camera ? 'camera' : 'camera-off'} size={15} />
         </span>
+
+        {micActive && (
+          <span className="flex items-center gap-1.5 text-xs text-accent" data-mic="active">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-[#7dd3a0]" />
+            Mic PC
+          </span>
+        )}
       </div>
     </header>
   )

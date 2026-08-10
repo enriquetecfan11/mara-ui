@@ -30,32 +30,53 @@ interface MaraStore {
   resolveConfirm: () => void
 }
 
-const defaultDevice: DeviceStatus = {
-  temperature: 0,
-  microphone: true,
-  camera: true,
+const emptyDevice: DeviceStatus = {
+  temperature: null,
+  microphone: null,
+  camera: null,
 }
 
 let overlaySeq = 0
 const overlayId = (kind: string) => `${kind}:${overlaySeq++}`
 
-export const useMaraStore = create<MaraStore>((set, get) => ({
-  state: 'idle',
-  message: null,
-  audioLevel: 0,
-  device: defaultDevice,
-  connected: false,
-  overlays: [],
-  confirm: null,
+export const useMaraStore = create<MaraStore>((set, get) => {
+  /** Aplica el estado de conexión de forma única (transporte y mara:network). */
+  const applyConnection = (connected: boolean) => {
+    set({
+      connected,
+      ...(connected ? {} : { state: 'offline' as MaraState, device: emptyDevice }),
+    })
+    if (connected) {
+      get().popOverlay('network')
+    } else {
+      get().pushOverlay({
+        id: 'network',
+        kind: 'network',
+        title: 'Sin conexión',
+        subtitle: 'Reconectando con Mara OS…',
+        icon: 'wifi-off',
+        ttl: 0,
+      })
+    }
+  }
 
-  handleEvent: (event) => {
-    const data = event.data as Record<string, unknown>
-    const { device, pushOverlay, popOverlay } = get()
+  return {
+    state: 'offline',
+    message: null,
+    audioLevel: 0,
+    device: emptyDevice,
+    connected: false,
+    overlays: [],
+    confirm: null,
 
-    switch (event.type) {
-      case 'mara:state':
-        set({ state: data.state as MaraState })
-        break
+    handleEvent: (event) => {
+      const data = event.data as Record<string, unknown>
+      const { device, pushOverlay } = get()
+
+      switch (event.type) {
+        case 'mara:state':
+          set({ state: data.state as MaraState })
+          break
 
       case 'mara:message':
         set({ message: String(data.text ?? '') })
@@ -67,12 +88,21 @@ export const useMaraStore = create<MaraStore>((set, get) => ({
 
       case 'mara:system': {
         const next: DeviceStatus = {
-          temperature: Number(data.temperature) || 0,
-          microphone: data.microphone !== false,
-          camera: data.camera !== false,
+          temperature:
+            typeof data.temperature === 'number' && Number.isFinite(data.temperature)
+              ? data.temperature
+              : device.temperature,
+          microphone:
+            typeof data.microphone === 'boolean' ? data.microphone : device.microphone,
+          camera: typeof data.camera === 'boolean' ? data.camera : device.camera,
         }
         set({ device: next })
-        useSettingsStore.getState().set({ microphone: next.microphone, camera: next.camera })
+        if (typeof data.microphone === 'boolean') {
+          useSettingsStore.getState().set({ microphone: data.microphone })
+        }
+        if (typeof data.camera === 'boolean') {
+          useSettingsStore.getState().set({ camera: data.camera })
+        }
         break
       }
 
@@ -134,20 +164,7 @@ export const useMaraStore = create<MaraStore>((set, get) => ({
       }
 
       case 'mara:network': {
-        const connected = Boolean(data.connected)
-        set({ connected })
-        if (connected) {
-          popOverlay('network')
-        } else {
-          pushOverlay({
-            id: 'network',
-            kind: 'network',
-            title: 'Sin conexión',
-            subtitle: 'Reconectando con Mara OS…',
-            icon: 'wifi-off',
-            ttl: 0,
-          })
-        }
+        applyConnection(Boolean(data.connected))
         break
       }
 
@@ -179,20 +196,7 @@ export const useMaraStore = create<MaraStore>((set, get) => ({
   },
 
   handleStatus: (connected) => {
-    const { pushOverlay, popOverlay } = get()
-    set({ connected })
-    if (connected) {
-      popOverlay('network')
-    } else {
-      pushOverlay({
-        id: 'network',
-        kind: 'network',
-        title: 'Sin conexión',
-        subtitle: 'Reconectando con Mara OS…',
-        icon: 'wifi-off',
-        ttl: 0,
-      })
-    }
+    applyConnection(connected)
   },
 
   clearMessage: () => set({ message: null }),
@@ -205,7 +209,8 @@ export const useMaraStore = create<MaraStore>((set, get) => ({
   popOverlay: (id) =>
     set((s) => ({ overlays: s.overlays.filter((o) => o.id !== id) })),
 
-  requestConfirm: (request) => set({ confirm: request }),
+    requestConfirm: (request) => set({ confirm: request }),
 
-  resolveConfirm: () => set({ confirm: null }),
-}))
+    resolveConfirm: () => set({ confirm: null }),
+  }
+})

@@ -1,15 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSettingsStore } from '@/store/settingsStore'
 import { useMaraStore } from '@/store/maraStore'
-import {
-  isMockMode,
-  sendCommand,
-  simulateConfirm,
-  simulateEvent,
-  simulateNumpad,
-  simulateState,
-} from '@/services/maraConnection'
-import type { MaraState, NumpadKey } from '@/types/mara'
+import { sendCommand } from '@/services/maraConnection'
 import { Slider } from '@/components/ui/Slider'
 import { Toggle } from '@/components/ui/Toggle'
 import { Icon } from '@/components/ui/Icon'
@@ -17,6 +9,7 @@ import { Icon } from '@/components/ui/Icon'
 interface SettingsPanelProps {
   open: boolean
   onClose: () => void
+  micActive: boolean
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -28,16 +21,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   )
 }
 
-const SIM_STATES: MaraState[] = ['idle', 'listening', 'thinking', 'speaking', 'seeing', 'error', 'offline']
-
-const NUMPAD_KEYS: NumpadKey[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '*', '0', '#']
-
-/** Panel de configuración deslizante desde la parte inferior. */
-export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
+export function SettingsPanel({ open, onClose, micActive }: SettingsPanelProps) {
   const settings = useSettingsStore()
   const device = useMaraStore((s) => s.device)
   const connected = useMaraStore((s) => s.connected)
-  const mock = isMockMode()
 
   const set = settings.set
 
@@ -107,110 +94,35 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
 
               <div className="h-px bg-line" />
 
+              <div>
+                <Row label="Micrófono del navegador">
+                  <Toggle
+                    checked={settings.browserMic}
+                    onChange={(v) => set({ browserMic: v })}
+                    label="Mic del navegador"
+                  />
+                </Row>
+                <p className="-mt-1 pb-1 text-[11px] leading-relaxed text-faint">
+                  Captura el audio del PC para probar voz sin Mara OS. Requiere
+                  localhost o HTTPS.
+                </p>
+                {settings.browserMic && (
+                  <p className="flex items-center gap-2 pb-1 text-[11px] text-dim" data-mic-status>
+                    <span className={`h-2 w-2 rounded-full ${micActive ? 'animate-pulse bg-[#7dd3a0]' : 'bg-faint'}`} />
+                    {micActive ? 'Capturando audio (16 kHz)…' : 'Activando micrófono…'}
+                  </p>
+                )}
+              </div>
+
+              <div className="h-px bg-line" />
+
               <Row label="Estado de Mara OS">
                 <span className="flex items-center gap-2 text-xs text-dim">
                   <span className="h-2 w-2 rounded-full" style={{ background: connected ? '#7dd3a0' : '#5a6675', boxShadow: connected ? '0 0 6px rgba(125,211,160,0.9)' : 'none' }} />
                   {connected ? 'Conectado' : 'Desconectado'}
-                  {device.temperature > 0 ? ` · ${Math.round(device.temperature)}°` : ''}
+                  {device.temperature != null && device.temperature > 0 ? ` · ${Math.round(device.temperature)}°` : ''}
                 </span>
               </Row>
-
-              {mock && (
-                <div className="space-y-5 pt-1">
-                  <div>
-                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-faint">Simular estado</p>
-                    <div className="grid grid-cols-4 gap-2">
-                      {SIM_STATES.map((state) => (
-                        <button
-                          key={state}
-                          type="button"
-                          className="rounded-lg border border-line px-2 py-2 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                          onClick={() => simulateState(state)}
-                        >
-                          {state}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-faint">
-                      Teclado numérico <span className="normal-case tracking-normal">(futuro mara-device)</span>
-                    </p>
-                    <div className="grid grid-cols-3 gap-2">
-                      {NUMPAD_KEYS.map((key) => (
-                        <button
-                          key={key}
-                          type="button"
-                          className="rounded-lg border border-line px-2 py-2.5 font-mono text-sm text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                          onClick={() => simulateNumpad(key, 'short')}
-                        >
-                          {key}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateNumpad('power', 'long')}
-                      >
-                        Encendido (mantener)
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-amber-300/25 px-2 py-2.5 text-[11px] text-amber-200/80 transition-colors active:bg-panel"
-                        onClick={simulateConfirm}
-                      >
-                        Confirmación crítica
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="mb-3 text-xs uppercase tracking-[0.2em] text-faint">
-                      Simular eventos <span className="normal-case tracking-normal">(Mara OS)</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateEvent('mara:volume', { volume: 70 })}
-                      >
-                        Volumen 70
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateEvent('mara:mute', { muted: true })}
-                      >
-                        Mute
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateEvent('mara:camera', { enabled: false })}
-                      >
-                        Cámara off
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateEvent('mara:network', { connected: false })}
-                      >
-                        Pérdida de red
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-line px-2 py-2.5 text-[11px] text-dim transition-colors active:border-accent/50 active:bg-panel active:text-ink"
-                        onClick={() => simulateEvent('mara:network', { connected: true })}
-                      >
-                        Red recuperada
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <button
                 type="button"

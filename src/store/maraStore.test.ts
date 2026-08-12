@@ -11,6 +11,7 @@ describe('maraStore - initial state', () => {
     expect(state.connected).toBe(false)
     expect(state.device).toEqual(emptyDevice)
     expect(state.message).toBeNull()
+    expect(state.audio).toBeNull()
     expect(state.audioLevel).toBe(0)
     expect(state.overlays).toEqual([])
     expect(state.confirm).toBeNull()
@@ -22,6 +23,7 @@ describe('maraStore - event handling', () => {
     useMaraStore.setState({
       state: 'offline',
       message: null,
+      audio: null,
       audioLevel: 0,
       device: { temperature: null, microphone: null, camera: null },
       connected: false,
@@ -38,6 +40,40 @@ describe('maraStore - event handling', () => {
   it('mara:state with idle', () => {
     useMaraStore.getState().handleEvent(makeEvent('mara:state', { state: 'idle' }))
     expect(useMaraStore.getState().state).toBe('idle')
+  })
+
+  it('voice.speaking.started sets state to speaking', () => {
+    useMaraStore.getState().handleEvent(makeEvent('voice.speaking.started', {}))
+    expect(useMaraStore.getState().state).toBe('speaking')
+  })
+
+  it('voice.speaking.finished returns to idle', () => {
+    useMaraStore.getState().handleEvent(makeEvent('voice.speaking.started', {}))
+    useMaraStore.getState().handleEvent(makeEvent('voice.speaking.finished', {}))
+    expect(useMaraStore.getState().state).toBe('idle')
+  })
+
+  it('voice.audio sets state to speaking and stores the audio', () => {
+    useMaraStore.getState().handleEvent(makeEvent('voice.audio', { text: 'Hola', audio: 'QVdGRQ==' }))
+    const store = useMaraStore.getState()
+    expect(store.state).toBe('speaking')
+    expect(store.audio).toBe('QVdGRQ==')
+    expect(store.message).toBe('Hola')
+  })
+
+  it('voice.speaking.finished keeps speaking while audio is pending', () => {
+    useMaraStore.getState().handleEvent(makeEvent('voice.audio', { audio: 'QVdGRQ==' }))
+    useMaraStore.getState().handleEvent(makeEvent('voice.speaking.finished', {}))
+    expect(useMaraStore.getState().state).toBe('speaking')
+    expect(useMaraStore.getState().audio).toBe('QVdGRQ==')
+  })
+
+  it('voidAudio clears the audio and returns to idle', () => {
+    useMaraStore.getState().handleEvent(makeEvent('voice.audio', { audio: 'QVdGRQ==' }))
+    useMaraStore.getState().voidAudio()
+    const store = useMaraStore.getState()
+    expect(store.audio).toBeNull()
+    expect(store.state).toBe('idle')
   })
 
   it('mara:message sets message', () => {
@@ -134,6 +170,7 @@ describe('maraStore - connection handling', () => {
     useMaraStore.setState({
       state: 'offline',
       message: null,
+      audio: null,
       audioLevel: 0,
       device: { temperature: null, microphone: null, camera: null },
       connected: false,

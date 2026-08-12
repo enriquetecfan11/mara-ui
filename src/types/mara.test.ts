@@ -83,6 +83,21 @@ describe('event envelope structure', () => {
     const event = makeEvent('mara:numpad', { key: '5', press: 'long' })
     expect(event.data).toEqual({ key: '5', press: 'long' })
   })
+
+  it('voice.speaking events have the right shape', () => {
+    const started = makeEvent('voice.speaking.started', {})
+    expect(started.type).toBe('voice.speaking.started')
+    expect(started.data).toEqual({})
+    const finished = makeEvent('voice.speaking.finished', {})
+    expect(finished.type).toBe('voice.speaking.finished')
+    expect(finished.data).toEqual({})
+  })
+
+  it('voice.audio event carries text and base64 audio', () => {
+    const event = makeEvent('voice.audio', { text: 'Hola', audio: 'QVdGRQ==' })
+    expect(event.type).toBe('voice.audio')
+    expect(event.data).toEqual({ text: 'Hola', audio: 'QVdGRQ==' })
+  })
 })
 
 describe('no mock/fake data in types', () => {

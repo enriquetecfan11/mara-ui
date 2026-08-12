@@ -14,6 +14,8 @@ interface MaraStore {
   /** Estado visual de Mara (idle, listening, …). */
   state: MaraState
   message: string | null
+  /** WAV en base64 para reproducir en la UI (respuesta de voz de Mara). */
+  audio: string | null
   audioLevel: number
   /** Estado técnico del dispositivo (micrófono, cámara, temperatura). */
   device: DeviceStatus
@@ -24,6 +26,7 @@ interface MaraStore {
   handleEvent: (event: MaraEventEnvelope) => void
   handleStatus: (connected: boolean) => void
   clearMessage: () => void
+  voidAudio: () => void
   pushOverlay: (overlay: OverlayData) => void
   popOverlay: (id: string) => void
   requestConfirm: (request: ConfirmRequest) => void
@@ -44,7 +47,7 @@ export const useMaraStore = create<MaraStore>((set, get) => {
   const applyConnection = (connected: boolean) => {
     set({
       connected,
-      ...(connected ? {} : { state: 'offline' as MaraState, device: emptyDevice }),
+      ...(connected ? {} : { state: 'offline' as MaraState, device: emptyDevice, audio: null }),
     })
     if (connected) {
       get().popOverlay('network')
@@ -63,6 +66,7 @@ export const useMaraStore = create<MaraStore>((set, get) => {
   return {
     state: 'offline',
     message: null,
+    audio: null,
     audioLevel: 0,
     device: emptyDevice,
     connected: false,
@@ -74,9 +78,33 @@ export const useMaraStore = create<MaraStore>((set, get) => {
       const { device, pushOverlay } = get()
 
       switch (event.type) {
-        case 'mara:state':
-          set({ state: data.state as MaraState })
-          break
+      case 'mara:state':
+        set({ state: data.state as MaraState })
+        break
+
+      // Ciclo de habla (TTS) de Mara OS: empuja la UI a speaking/idle sin
+      // depender del canal de salida (p. ej. Telegram).
+      case 'voice.speaking.started':
+        set({ state: 'speaking' })
+        break
+
+      case 'voice.speaking.finished':
+        // Si hay audio pendiente de reproducir, la UI sigue en "speaking"
+        // hasta que termine la reproducción (lo cierra voidAudio).
+        set((s) => (s.audio ? {} : { state: 'idle' }))
+        break
+
+      // Respuesta de voz para reproducir en la UI: pasa a speaking y deja el
+      // audio listo. El texto se conserva/muestra mientras suena.
+      case 'voice.audio':
+        set({
+          state: 'speaking',
+          audio: String(data.audio ?? ''),
+          ...(typeof data.text === 'string' && data.text
+            ? { message: data.text }
+            : {}),
+        })
+        break
 
       case 'mara:message':
         set({ message: String(data.text ?? '') })
@@ -200,6 +228,8 @@ export const useMaraStore = create<MaraStore>((set, get) => {
   },
 
   clearMessage: () => set({ message: null }),
+
+  voidAudio: () => set({ audio: null, state: 'idle' }),
 
   pushOverlay: (overlay) =>
     set((s) => ({

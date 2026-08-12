@@ -248,6 +248,9 @@ y lo normaliza al sobre v1 en `src/types/mara.ts` (`normalizeEvent`).
 | ----------------- | ------------------------------------------------------------- | ------------- |
 | `mara:state`      | `{ state }` (`idle`/`listening`/`thinking`/`speaking`/`seeing`/`error`/`offline`) | Estado del orb y texto |
 | `mara:message`    | `{ text }`                                                    | Respuesta temporal bajo el orb |
+| `voice.speaking.started` | `{}`                                                    | Inicio del TTS: la UI pasa a `speaking` (`RESPONDIENDO...`) |
+| `voice.speaking.finished` | `{}`                                                    | Fin del TTS: la UI vuelve a `idle` (la respuesta se atenúa y se oculta) |
+| `voice.audio` | `{ text?, audio }` (`audio` = WAV en base64)                     | Respuesta de voz para la UI: la reproduce y mantiene `speaking` mientras suena |
 | `mara:audio-level`| `{ level }` (0..1)                                            | Pulsos/ondas del orb |
 | `mara:system`     | `{ temperature, microphone, camera }`                         | Estado técnico (barra + ajustes) |
 | `mara:error`      | `{ message? }`                                                | Estado `error` + overlay |
@@ -311,6 +314,9 @@ PC** la UI puede capturar el audio del navegador y enviarlo por el bridge:
    `mara:audio-stop`. El bridge calcula el nivel y lo emite como
    `mara:audio-level` para todas las UIs; si `MARA_BRAIN_WS_URL` está
    configurado, reenvía el audio crudo al cerebro de Mara.
+5. Mara responde con voz: `mara-os` genera el TTS y lo envía como
+   `voice.audio` (WAV en base64); la UI lo reproduce por los altavoces del
+   dispositivo manteniendo `RESPONDIENDO...` hasta que termina de sonar.
 
 Es una herramienta de desarrollo: en producción la voz la captura Mara OS.
 

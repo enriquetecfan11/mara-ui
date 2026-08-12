@@ -75,7 +75,7 @@ let brainConnected = false
  * Mara OS ocurre en el momento del handshake, antes de que haya clientes).
  */
 function trackSync(event) {
-  if (event.type === 'mara:state' || event.type === 'mara:network' || event.type === 'mara:message') {
+  if (event.type === 'mara:state' || event.type === 'mara:network' || event.type === 'mara:message' || event.type === 'voice.speaking.started' || event.type === 'voice.speaking.finished') {
     lastSynced.set(event.type, event)
   }
 }

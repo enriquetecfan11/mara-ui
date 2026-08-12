@@ -16,9 +16,16 @@ export const useSettingsStore = create<SettingsStore>()(
       microphone: true,
       camera: true,
       wakeWord: true,
-      browserMic: false,
+      browserMic: true,
       set: (patch) => set(patch),
     }),
-    { name: 'mara-ui-settings' },
+    {
+      name: 'mara-ui-settings',
+      version: 2,
+      migrate: (persisted) => {
+        const prev = persisted as Partial<SettingsStore>
+        return { ...prev, browserMic: true }
+      },
+    },
   ),
 )

@@ -51,6 +51,9 @@ export type MaraEventType =
   | 'mara:network'
   | 'mara:numpad'
   | 'mara:confirm'
+  | 'voice.speaking.started'
+  | 'voice.speaking.finished'
+  | 'voice.audio'
 
 /** Payload de cada tipo de evento. */
 export interface MaraEventDataMap {
@@ -65,6 +68,9 @@ export interface MaraEventDataMap {
   'mara:network': { connected: boolean }
   'mara:numpad': { key: NumpadKey; press?: NumpadPress }
   'mara:confirm': { id: string; title: string; message: string; action: string }
+  'voice.speaking.started': {}
+  'voice.speaking.finished': {}
+  'voice.audio': { text?: string; audio: string }
 }
 
 /** Sobre v1 del protocolo WebSocket/API. */

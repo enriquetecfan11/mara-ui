@@ -5,7 +5,7 @@ const LABELS: Record<MaraState, string> = {
   idle: 'Esperando...',
   listening: 'Escuchando...',
   thinking: 'Pensando...',
-  speaking: 'Hablando...',
+  speaking: 'RESPONDIENDO...',
   seeing: 'Observando...',
   error: 'Hay un problema',
   offline: 'Sin conexión',

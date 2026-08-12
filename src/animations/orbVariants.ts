@@ -135,8 +135,9 @@ export const sphereVariants: V = {
     transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
   },
   speaking: {
-    scale: [1, 1.09, 1],
-    transition: { duration: 0.95, repeat: Infinity, ease: 'easeInOut' },
+    scale: [1, 1.085, 1.02, 1.08, 1.01, 1.06, 1],
+    x: [0, 0.9, -0.7, 0.7, -0.9, 0.4, 0],
+    transition: { duration: 0.6, repeat: Infinity, ease: 'easeInOut' },
   },
   seeing: {
     scale: [1, 1.02, 1],
@@ -170,9 +171,9 @@ export const corePulseVariants: V = {
     transition: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' },
   },
   speaking: {
-    opacity: [0.55, 1, 0.55],
-    scale: [1, 1.16, 1],
-    transition: { duration: 0.95, repeat: Infinity, ease: 'easeInOut' },
+    opacity: [0.55, 1, 0.82, 1, 0.6],
+    scale: [1, 1.18, 1.08, 1.16, 1.02],
+    transition: { duration: 0.6, repeat: Infinity, ease: 'easeInOut' },
   },
   seeing: {
     opacity: [0.5, 0.85, 0.5],

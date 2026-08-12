@@ -70,6 +70,16 @@ export function MainScreen() {
           </div>
 
           <div className="flex min-h-[7rem] flex-col items-center justify-end gap-1 sm:min-h-[8rem]">
+            {state === 'listening' && (
+              <button
+                type="button"
+                onClick={() => sendCommand({ type: 'mara:stop-listening' })}
+                className="mb-1 flex items-center gap-2 rounded-full border border-line/60 bg-panel/80 px-4 py-1.5 text-[11px] tracking-[0.15em] text-dim uppercase transition-colors active:border-accent/40 active:text-ink"
+              >
+                <span className="h-2 w-2 rounded-full bg-[#e07a5f]" />
+                Detener
+              </button>
+            )}
             <StatusText state={state} />
             <MessageText />
           </div>

@@ -58,7 +58,7 @@ export function MessageText() {
             animate={{ opacity: dimmed ? MESSAGE_DIM_OPACITY : 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="max-w-[26rem] text-center text-base leading-snug text-ink/85 sm:max-w-[30rem]"
+            className="max-w-[26rem] text-center text-base leading-snug text-ink/85 sm:max-w-[30rem] short:max-w-[22rem] short:text-[13px]"
           >
             {message}
           </motion.p>

@@ -45,6 +45,18 @@ npm run dev
 
 Abre `http://localhost:5173`.
 
+### Preview de la pantalla táctil
+
+Para ver la UI a tamaño real de la pantalla del dispositivo (800 × 480, horizontal):
+
+```bash
+npm run dev:preview
+```
+
+Abre `http://localhost:5173/preview.html` con un iframe a 800 × 480. Si la
+ventana del navegador es más pequeña, el marco se escala automáticamente.
+La app detecta las pantallas bajas (`max-height: 560px`) y usa el modo compacto.
+
 ### Configuración por variables de entorno
 
 Crea un `.env` a partir de `.env.example`:

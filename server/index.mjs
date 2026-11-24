@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { WebSocketServer, WebSocket } from 'ws'
 
 const PORT = Number(process.env.MARA_SERVER_PORT ?? 8765)
+const HOST = process.env.MARA_SERVER_HOST ?? '0.0.0.0'
 const BRAIN_URL = process.env.MARA_BRAIN_WS_URL || null
 
 const DIST_DIR = fileURLToPath(new URL('../dist/', import.meta.url))
@@ -122,6 +123,7 @@ function connectBrain() {
     brainConnected = true
     brainAttempt = 0
     if (timeout) clearTimeout(timeout)
+    broadcast(makeEvent('mara:network', { connected: true }))
   })
   brain.on('message', (raw) => {
     console.log('[bridge] Mara OS -> UI:', raw.toString())
@@ -135,6 +137,7 @@ function connectBrain() {
     console.log('[bridge] conexión con Mara OS cerrada')
     brain = null
     brainConnected = false
+    broadcast(makeEvent('mara:network', { connected: false }))
     if (timeout) clearTimeout(timeout)
     const delay = Math.min(1000 * 2 ** brainAttempt, 30000)
     brainAttempt += 1
@@ -177,7 +180,11 @@ async function serveStatic(req, res, pathname) {
 
   try {
     const content = await readFile(resolved)
-    res.writeHead(200, { 'Content-Type': MIME[extname(resolved)] ?? 'application/octet-stream' })
+    const headers = { 'Content-Type': MIME[extname(resolved)] ?? 'application/octet-stream' }
+    // index.html contiene las referencias a los bundles generados por Vite;
+    // no debe quedarse cacheado cuando cambia VITE_MARA_WS_URL.
+    if (resolved.endsWith('/index.html')) headers['Cache-Control'] = 'no-store'
+    res.writeHead(200, headers)
     res.end(content)
   } catch {
     res.writeHead(500, { 'Content-Type': 'text/plain' })
@@ -298,9 +305,10 @@ wss.on('connection', (socket) => {
   })
 })
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
   console.log(`Mara bridge listo`)
-  console.log(`  Web   http://localhost:${PORT}        (sirve dist/)`)
-  console.log(`  WS    ws://localhost:${PORT}          (conexión de la UI)`)
-  console.log(`  API   http://localhost:${PORT}/api/event  (enviar eventos)`)
+  console.log(`  Bind  ${HOST}:${PORT}`)
+  console.log(`  Web   http://<host>:${PORT}        (sirve dist/)`)
+  console.log(`  WS    ws://<host>:${PORT}          (conexión de la UI)`)
+  console.log(`  API   http://<host>:${PORT}/api/event  (enviar eventos)`)
 })

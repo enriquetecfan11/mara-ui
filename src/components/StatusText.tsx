@@ -30,7 +30,7 @@ export function StatusText({ state }: { state: MaraState }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className={`text-sm tracking-[0.25em] uppercase ${stateClass[state]}`}
+        className={`text-sm tracking-[0.25em] uppercase short:text-[13px] short:tracking-[0.2em] ${stateClass[state]}`}
       >
         {LABELS[state]}
       </motion.p>

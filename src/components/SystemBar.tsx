@@ -10,16 +10,16 @@ export function SystemBar({ micActive }: { micActive: boolean }) {
   const temp = device.temperature != null ? Math.round(device.temperature) : null
 
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-5 sm:px-7 sm:pt-6">
-      <div className="flex flex-col gap-1.5">
-        <span className="text-2xl font-light leading-none tracking-[0.3em] text-ink/90 tabular-nums">
+    <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between px-5 pt-5 sm:px-7 sm:pt-6 short:px-4 short:pt-2.5">
+      <div className="flex flex-col gap-1.5 short:gap-0.5">
+        <span className="text-2xl font-light leading-none tracking-[0.3em] text-ink/90 tabular-nums short:text-xl">
           {time}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.55em] text-faint">Mara</span>
+        <span className="text-[10px] uppercase tracking-[0.55em] text-faint short:text-[8px]">Mara</span>
       </div>
 
-      <div className="flex items-center gap-4 text-dim">
-        <span className="flex items-center gap-1.5 text-xs tabular-nums">
+      <div className="flex items-center gap-4 text-dim short:gap-2">
+        <span className="flex items-center gap-1.5 text-xs tabular-nums short:text-[10px]">
           <span className="flex h-2 w-2 rounded-full" style={{ background: connected ? '#7dd3a0' : '#5a6675' }}>
             <span
               className="h-2 w-2 rounded-full"
@@ -32,7 +32,7 @@ export function SystemBar({ micActive }: { micActive: boolean }) {
           {connected ? 'En línea' : 'Sin señal'}
         </span>
 
-        <span className="flex items-center gap-1.5 text-xs tabular-nums">
+        <span className="flex items-center gap-1.5 text-xs tabular-nums short:gap-1 short:text-[10px]">
           <Icon name="temp" size={15} />
           {temp != null && temp > 0 ? `${temp}°` : '--°'}
         </span>
@@ -46,7 +46,7 @@ export function SystemBar({ micActive }: { micActive: boolean }) {
         </span>
 
         {micActive && (
-          <span className="flex items-center gap-1.5 text-xs text-accent" data-mic="active">
+          <span className="flex items-center gap-1.5 text-xs text-accent short:text-[10px]" data-mic="active">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#7dd3a0]" />
             Mic PC
           </span>

@@ -90,6 +90,7 @@ export type MaraCommand =
   | { type: 'mara:start-listening' }
   | { type: 'mara:stop-listening' }
   | { type: 'mara:interrupt' }
+  | { type: 'mara:text'; data: { text: string } }
   | { type: 'mara:settings'; data: Partial<DeviceSettings> }
   | { type: 'mara:confirm-response'; data: { id: string; accepted: boolean } }
   | { type: 'mara:numpad'; data: { key: NumpadKey; press?: NumpadPress } }

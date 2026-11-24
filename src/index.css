@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Pantallas bajas: 800×480 y similares (p. ej. DSI 4.3"). */
+@custom-variant short (@media (max-height: 560px));
+
 @theme {
   --color-abyss: #05070b;
   --color-panel: #0c1018;
